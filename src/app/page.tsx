@@ -11,6 +11,7 @@ export default function Home() {
 
   const [url, setUrl] = useState("");
   const [id, setId] = useState("");
+  const [scrapedData, setScrapedData] = useState<string | null>(null);
 
   useEffect(() => {
     const urlParam = searchParams.get("url") || "";
@@ -19,49 +20,62 @@ export default function Home() {
     setId(idParam);
   }, [searchParams]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const params = new URLSearchParams();
-    if (url) params.set("url", url);
-    if (id) params.set("id", id);
+    try {
+      const response = await fetch(
+        `/api/scrape?url=${encodeURIComponent(url)}`
+      );
+      const data = await response.json();
 
-    // Update the URL
-    router.push(`/?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch data");
+      }
+
+      setScrapedData(`Page Title: ${data.title}`);
+    } catch (error) {
+      console.error("Failed to fetch data:", error);
+      setScrapedData("Error fetching data");
+    }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="grid grid-cols-[auto_auto_min-content] gap-2 items-end"
-    >
-      <div>
-        <label htmlFor="url" className="block font-medium">
-          Please type in your URL:
-        </label>
-        <Input
-          id="url"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          placeholder="Enter URL..."
-          required
-        />
-      </div>
-      <div>
-        <label htmlFor="id" className="block font-medium">
-          Please type in your ID:
-        </label>
-        <Input
-          id="id"
-          value={id}
-          onChange={(e) => setId(e.target.value)}
-          placeholder="Enter ID..."
-          required
-        />
-      </div>
-      <div>
-        <Button type="submit">Search Now!</Button>
-      </div>
-    </form>
+    <>
+      <form
+        onSubmit={handleSubmit}
+        className="grid grid-cols-[auto_auto_min-content] gap-2 items-end"
+      >
+        <div>
+          <label htmlFor="url" className="block font-medium">
+            Please type in your URL:
+          </label>
+          <Input
+            id="url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Enter URL..."
+            required
+          />
+        </div>
+        <div>
+          <label htmlFor="id" className="block font-medium">
+            Please type in your ID:
+          </label>
+          <Input
+            id="id"
+            value={id}
+            onChange={(e) => setId(e.target.value)}
+            placeholder="Enter ID..."
+            required
+          />
+        </div>
+        <div>
+          <Button type="submit">Search Now!</Button>
+        </div>
+      </form>
+
+      {scrapedData && <p className="mt-4">{scrapedData}</p>}
+    </>
   );
 }
