@@ -14,30 +14,45 @@ export default function Home() {
   const [scrapedData, setScrapedData] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log("Inside useEffect");
+
     const urlParam = searchParams.get("url") || "";
     const idParam = searchParams.get("id") || "";
+
     setUrl(urlParam);
     setId(idParam);
+
+    if (urlParam && idParam) {
+      console.log(`Searching for URL: ${urlParam}, ID: ${idParam}`);
+      fetchScrapedData(urlParam, idParam);
+    } else {
+      console.log("URL or ID missing, skipping API call.");
+    }
   }, [searchParams]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const fetchScrapedData = async (url: string, id: string) => {
     try {
-      const response = await fetch(
-        `/api/scrape?url=${encodeURIComponent(url)}`
-      );
-      const data = await response.json();
+      const response = await fetch(`/api/scrape?url=${url}&id=${id}`);
+      const text = await response.text(); // Get raw response
+      console.log("Raw API response:", text);
+
+      const data = JSON.parse(text); // Try parsing it as JSON
 
       if (!response.ok) {
         throw new Error(data.error || "Failed to fetch data");
       }
 
-      setScrapedData(`Page Title: ${data.title}`);
+      console.log("API Data Received:", data);
+      setScrapedData(`Extracted Text: ${data.elementText}`);
     } catch (error) {
-      console.error("Failed to fetch data:", error);
-      setScrapedData("Error fetching data");
+      console.error("Error fetching data:", error);
+      setScrapedData("Error fetching data.");
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    router.push(`/?url=${url}&id=${id}`);
   };
 
   return (
